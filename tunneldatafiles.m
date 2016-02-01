@@ -35,9 +35,4 @@ switch nargin
             end
         end
 end
-if nargin > 2
-    
-else
-    
-end
 end
