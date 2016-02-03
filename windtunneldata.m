@@ -12,9 +12,12 @@ classdef windtunneldata
     end
     methods
         function self = windtunneldata(files)
-            % Inputs: A cell array of file names
+            % Inputs: A cell array of file names, likely produced by the
+            %   tunneldatafiles function
             % Outputs: A windtunneldata object
             % Note that you can't tell which data is from which file later.
+            %   If necessary, you can have a seperate object for every
+            %   input file.
             for i=1:length(files)
                 % This is taken from DataRead.m by Lucas Droste for ASEN
                 % 2002.
