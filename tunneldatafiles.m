@@ -1,15 +1,16 @@
 function names = tunneldatafiles(name, groups, root, section)
 % Returns a cell array of filenames for use with the windtunneldata
 % interface
-% name: string, name of project (like 'AirfoilPressure')
-% section: integer, lab section (optional)
-% groups: integer array, what groups to take data from
+% name: string, name of project (like 'AirfoilPressure') which is the first
+%   portion of the filename
+% groups: integer array, what groups to take data from 
 % root: the folder to look in (specified using linux-style relative pathing
 %   or system-specific absolute pathing)
+% section: integer, lab section (optional)
 names=cell(length(groups),1);
 switch nargin
     case 1
-        error('too few arguments')
+        error('Too few arguments.')
     case 2
         for i = 1:length(groups)
             names(i) = cellstr(sprintf('%s_G%02d.csv',name,groups(i)));

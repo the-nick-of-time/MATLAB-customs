@@ -63,29 +63,22 @@ classdef windtunneldata
                 self.ELD = [self.ELD; ELDx ELDy];
             end
         end
+        
         function rv = getAtmosphere(self, which)
-            % Inputs: [optional] if you want only one of the data sections,
-            %   this acceps a string argument naming that section.
-            % Outputs: one or three column vectors of atmospheric data
+            % Inputs: [optional] 
+            %   which: a string naming which section of the data you want
+            %       Values: p pressure t temperature rho density
+            % Outputs: one or two column vectors of position data
             if nargin == 1
                 rv = self.Atmosphere;
-                return
-            end
-            if strcmp(which,'')
+            elseif strcmp(which,'')
                 rv = self.Atmosphere;
-                return
-            end
-            if strcmpi(which,'p') || strcmpi(which,'pressure')
+            elseif strcmpi(which,'p') || strcmpi(which,'pressure')
                 rv=self.Atmosphere(:,1);
-                return
-            end
-            if strcmpi(which,'t') || strcmpi(which,'temperature')
+            elseif strcmpi(which,'t') || strcmpi(which,'temperature')
                 rv=self.Atmosphere(:,2);
-                return
-            end
-            if strcmpi(which,'rho') || strcmpi(which,'density')
+            elseif strcmpi(which,'rho') || strcmpi(which,'density')
                 rv=self.Atmosphere(:,3);
-                return
             end
         end
         function rv = getAirspeed(self)
@@ -94,32 +87,26 @@ classdef windtunneldata
             rv=self.Airspeed;
         end
         function rv = getDynamic(self, which)
-            % Inputs: [optional] if you want only one of the data sections,
-            %   this acceps a string argument naming that section.
-            % Outputs: one or two column vectors of dynamic pressure
+            % Inputs: [optional] 
+            %   which: a string naming which section of the data you want
+            %       Values: p pitot aux auxiliary
+            % Outputs: one or two column vectors of position data
             if nargin == 1
                 rv = self.Dynamic;
-                return
-            end
-            if strcmp(which,'')
+            elseif strcmp(which,'')
                 rv = self.Dynamic;
-                return
-            end
-            if strcmpi(which,'pitot') || strcmpi(which,'p')
+            elseif strcmpi(which,'pitot') || strcmpi(which,'p')
                 rv=self.Dynamic(:,1);
-                return
-            end
-            if strcmpi(which,'aux') || strcmpi(which,'auxiliary')
+            elseif strcmpi(which,'aux') || strcmpi(which,'auxiliary')
                 rv=self.Dynamic(:,2);
-                return
             end
         end
         function rv = getPorts(self, which)
-            % Inputs: [optional] if you want only some of the data
-            %   sections, this accepts a vector of indices to take data
-            %   from
-            % Outputs: up to 16 column vectors of pressure data from
-            %   Scanivalve ports
+            % Inputs: [optional] 
+            %   which: a numeric vector identifying which ports you want
+            %       data from
+            %       Values: 1:16
+            % Outputs: one or two column vectors of position data
             if nargin == 1
                 rv = self.PressurePorts;
                 return
@@ -133,51 +120,38 @@ classdef windtunneldata
             rv=self.AngleAttack;
         end
         function rv = getSting(self, which)
-            % Inputs: [optional] if you want only one of the data sections,
-            %   this acceps a string argument naming that section.
-            % Outputs: one or three column vectors of force data
+            % Inputs: [optional] 
+            %   which: a string naming which section of the data you want
+            %       Values: n normal a axial m moment
+            % Outputs: one or two column vectors of force data
             if nargin == 1
                 rv = self.Sting;
-                return
-            end
-            if strcmp(which,'')
+            elseif strcmp(which,'')
                 rv = self.Sting;
-                return
-            end
-            if strcmpi(which,'n') || strcmpi(which,'normal')
+            elseif strcmpi(which,'n') || strcmpi(which,'normal')
                 rv=self.Sting(:,1);
-                return
-            end
-            if strcmpi(which,'a') || strcmpi(which,'axial')
+            elseif strcmpi(which,'a') || strcmpi(which,'axial')
                 rv=self.Sting(:,2);
-                return
-            end
-            if strcmpi(which,'m') || strcmpi(which,'moment')
+            elseif strcmpi(which,'m') || strcmpi(which,'moment')
                 rv=self.Sting(:,3);
-                return
             end
         end
         function rv = getELD(self, which)
-            % Inputs: [optional] if you want only one of the data sections,
-            %   this acceps a string argument naming that section.
+            % Inputs: [optional] 
+            %   which: a string naming which section of the data you want
+            %       Values: x y
             % Outputs: one or two column vectors of position data
             if nargin == 1
                 rv = self.ELD;
-                return
-            end
-            if strcmp(which,'')
+            elseif strcmp(which,'')
                 rv = self.ELD;
-                return
-            end
-            if strcmpi(which,'x') || strcmpi(which,'horizontal')
+            elseif strcmpi(which,'x') || strcmpi(which,'horizontal')
                 rv=self.ELD(:,1);
-                return
-            end
-            if strcmpi(which,'y') || strcmpi(which,'vertical')
+            elseif strcmpi(which,'y') || strcmpi(which,'vertical')
                 rv=self.ELD(:,2);
-                return
             end
         end
+        
         function rv = findByAngle(self, target, tolerance)
             % Inputs: 
             %   target: the value that you want to locate in the array
