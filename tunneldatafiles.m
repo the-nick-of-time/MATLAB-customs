@@ -7,6 +7,6 @@ function names = tunneldatafiles(format, arguments)
 %       to the string format
 names=cell(length(arguments), 1);
 for i = 1:length(names)
-    names(i) = cellstr(sprintf(format, arguments{i}{:}));
+    names{i} = cellstr(sprintf(format, arguments{i}(:)));
 end
 end

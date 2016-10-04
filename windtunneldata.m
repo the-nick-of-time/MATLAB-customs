@@ -66,8 +66,27 @@ classdef windtunneldata
         end
 
         function rv = getAny(self, which)
-            disp('Not implemented.')
-            rv = [];
+            if nargin == 1
+                error('Define a variable to get.')
+            elseif isnumeric(which)
+                rv = self.getPorts(which);
+            elseif strcmp(which, '')
+                error('Define a variable to get.')
+            elseif any(strcmpi(which, {'pressure', 'temperature', 'density'}))
+                rv=self.getAtmosphere(which);
+            elseif strcmpi(which, 'airspeed')
+                rv=self.getAirspeed();
+            elseif any(strcmpi(which, {'pitot', 'auxiliary'}))
+                rv=self.getDynamic(which);
+            elseif any(strcmpi(which, {'horizontal', 'vertical'}))
+                rv=self.getELD(which);
+            elseif strcmpi(which, 'angle')
+                rv = self.getAngle();
+            elseif any(strcmpi(which, {'normal', 'axial', 'moment'}))
+                rv = self.getSting(which);
+            else
+                error('Identifier not found.');
+            end
         end
         function rv = getAtmosphere(self, which)
             % Inputs: [optional]
@@ -88,7 +107,7 @@ classdef windtunneldata
                 error('Must request pressure, temperature, or density.');
             end
         end
-        function rv = getAirspeed(self, ~)
+        function rv = getAirspeed(self)
             % Inputs: none
             % Outputs: column vector of airspeed
             rv=self.Airspeed;
@@ -125,7 +144,7 @@ classdef windtunneldata
                 error('You must request ports in the range 1:16.');
             end
         end
-        function rv = getAngle(self, ~)
+        function rv = getAngle(self)
             % Inputs: none
             % Outputs: the angle of attack, in degrees
             rv=self.AngleAttack;
@@ -203,17 +222,31 @@ classdef windtunneldata
             %   which the airspeed is on the interval [19, 21].
             rv = find(abs(self.Airspeed - target) <= tolerance);
         end
-
-        function rv = averageSets(~, getter, variable, window)
+        function rv = findByLocation(self, target, tolerance, which)
             % Inputs:
-            %   target:
-            %   window:
-            % Outputs:
+            %   target: the value that you want to locate in the array
+            %   tolerance: the allowable error in the measurement
+            %   which: the location that you want, x or y
+            % Outputs: a vector of indices at which the value is within
+            %   tolerance of the target
+            % Example: obj.findBylocation(20, 1, 'x') returns the indices at
+            %   which the horizontal location of the ELD probe is on the
+            %   interval [19, 21].
+            rv = find(abs(self.getELD(which) - target) <= tolerance);
+        end
+
+        function rv = averageSets(self, variable, window)
+            % Inputs:
+            %   variable: The name of the variable to get
+            %   window: the size of the blocks to average over
+            % Outputs: A matrix with the same number of columns as the
+            %   original, but with the number of rows divided by `window`. Each
+            %   row is the average of `window` data points.
             sz = size(target);
-            rv = zeros(sz(1)/window, sz(2:end));
-            data = getter(variable);
+            rv = zeros(ceil(sz(1)/window), sz(2:end));
+            data = self.getAny(variable);
             for ind = 0:length(rv)-1
-                rv(ind+1) = mean(data(ind*window:(ind+1)*window, :), 1);
+                rv(ind+1) = mean(data(ind*window+1:(ind+1)*window+1, :), 1);
             end
         end
 
@@ -327,6 +360,10 @@ classdef windtunneldata
 
             xplace = find(strcmpi(xvar, opts));
             yplace = find(strcmpi(yvar, opts));
+
+            if ~xplace || ~yplace
+                error('Invalid identifier used.');
+            end
 
             X = vars{xplace};
             Y = vars{yplace};
