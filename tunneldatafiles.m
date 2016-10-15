@@ -5,8 +5,8 @@ function names = tunneldatafiles(format, arguments)
 %   format: the format of the output, in a sprintf-able form
 %   arguments: an array of cell arrays, each with the necessary set of inputs
 %       to the string format
-names=cell(length(arguments), 1);
+names=cell(size(arguments, 1), 1);
 for i = 1:length(names)
-    names{i} = cellstr(sprintf(format, arguments{i}(:)));
+    names{i} = sprintf(format, arguments{i, :});
 end
 end

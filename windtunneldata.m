@@ -9,6 +9,7 @@ classdef windtunneldata
         AngleAttack       % Angle of Attack [deg]
         Sting             % Sting data [Normal Axial Moment] [N N N*m]
         ELD               % ELD Probe location [x y] [mm]
+        VALID
     end
     methods
         function self = windtunneldata(files)
@@ -22,7 +23,13 @@ classdef windtunneldata
                 % This is taken from DataRead.m by Lucas Droste for ASEN
                 % 2002.
                 %data=csvread(char(files(i)),1);
-                data = load(char(files(i)));
+                try
+                    data = load(char(files(i)));
+                catch
+                    warning('Unable to find file %s', char(files(i)))
+                    self.VALID = false;
+                    continue
+                end
                 % divide data into vectors by variable
                 Patm = data(:,1);           % Atmospheric Pressure [Pa]
                 Tatm = data(:,2);           % Atmospheric Temperature [K]
@@ -62,6 +69,8 @@ classdef windtunneldata
                 self.AngleAttack = [self.AngleAttack;angleAttack];
                 self.Sting = [self.Sting; StrNormalF StrAxialF StrPitchM];
                 self.ELD = [self.ELD; ELDx ELDy];
+
+                self.VALID = true;
             end
         end
 
@@ -242,11 +251,20 @@ classdef windtunneldata
             % Outputs: A matrix with the same number of columns as the
             %   original, but with the number of rows divided by `window`. Each
             %   row is the average of `window` data points.
-            sz = size(target);
+            if isnumeric(variable)
+                data = variable;
+            else
+                data = self.getAny(variable);
+            end
+            sz = size(data);
             rv = zeros(ceil(sz(1)/window), sz(2:end));
-            data = self.getAny(variable);
-            for ind = 0:length(rv)-1
-                rv(ind+1) = mean(data(ind*window+1:(ind+1)*window+1, :), 1);
+            for ind = 0:size(rv, 1)-1
+                if (ind+1)*window > sz(1)
+                    temp = mean(data(ind*window+1 : end, :), 1);
+                else
+                    temp = mean(data(ind*window+1 : (ind+1)*window, :), 1);
+                end
+                rv(ind+1, :) = temp;
             end
         end
 
@@ -274,6 +292,10 @@ classdef windtunneldata
                 all(self.AngleAttack == other.AngleAttack) && ...
                 all(self.Sting == other.Sting) && ...
                 all(self.ELD == other.ELD);
+        end
+        function rv = not(self)
+            % Overloads the ~ operator to check if the object is fully defined or not
+            rv = ~self.VALID;
         end
 
         function fig = makeplot(self, xvar, yvar, figureargs, plotargs)
