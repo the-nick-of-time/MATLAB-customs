@@ -19,6 +19,7 @@ classdef windtunneldata
             % Note that you can't tell which data is from which file later.
             %   If necessary, you can have a seperate object for every
             %   input file.
+            self.VALID = false;
             for i=1:length(files)
                 % This is taken from DataRead.m by Lucas Droste for ASEN
                 % 2002.
@@ -27,7 +28,6 @@ classdef windtunneldata
                     data = load(char(files(i)));
                 catch
                     warning('Unable to find file %s', char(files(i)))
-                    self.VALID = false;
                     continue
                 end
                 % divide data into vectors by variable
@@ -104,13 +104,13 @@ classdef windtunneldata
             % Outputs: one or two column vectors of position data
             if nargin == 1
                 rv = self.Atmosphere;
-            elseif strcmp(which,'')
+            elseif strcmp(which, '')
                 rv = self.Atmosphere;
-            elseif strcmpi(which,'p') || strcmpi(which,'pressure')
+            elseif strcmpi(which, 'p') || strcmpi(which, 'pressure')
                 rv=self.Atmosphere(:,1);
-            elseif strcmpi(which,'t') || strcmpi(which,'temperature')
+            elseif strcmpi(which, 't') || strcmpi(which, 'temperature')
                 rv=self.Atmosphere(:,2);
-            elseif strcmpi(which,'rho') || strcmpi(which,'density')
+            elseif strcmpi(which, 'rho') || strcmpi(which, 'density')
                 rv=self.Atmosphere(:,3);
             else
                 error('Must request pressure, temperature, or density.');
@@ -128,14 +128,16 @@ classdef windtunneldata
             % Outputs: one or two column vectors of position data
             if nargin == 1
                 rv = self.Dynamic;
-            elseif strcmp(which,'')
+            elseif strcmp(which, '')
                 rv = self.Dynamic;
-            elseif strcmpi(which,'pitot') || strcmpi(which,'p')
+            elseif strcmpi(which, 'pitot') || strcmpi(which, 'p')
                 rv=self.Dynamic(:,1);
-            elseif strcmpi(which,'aux') || strcmpi(which,'auxiliary')
+            elseif strcmpi(which, 'aux') || strcmpi(which, 'auxiliary')
                 rv=self.Dynamic(:,2);
+            elseif strcmpi(which, 'calc') || strcmpi(which, 'calculated')
+                rv = .5 .* self.getAtmosphere('density') .* self.getAirspeed() .^ 2;
             else
-                error('Must request pitot or auxiliary.');
+                error('Must request pitot or auxiliary or calculated.');
             end
         end
         function rv = getPorts(self, which)
@@ -165,13 +167,13 @@ classdef windtunneldata
             % Outputs: one or two column vectors of force data
             if nargin == 1
                 rv = self.Sting;
-            elseif strcmp(which,'')
+            elseif strcmp(which, '')
                 rv = self.Sting;
-            elseif strcmpi(which,'n') || strcmpi(which,'normal')
+            elseif strcmpi(which, 'n') || strcmpi(which, 'normal')
                 rv=self.Sting(:,1);
-            elseif strcmpi(which,'a') || strcmpi(which,'axial')
+            elseif strcmpi(which, 'a') || strcmpi(which, 'axial')
                 rv=self.Sting(:,2);
-            elseif strcmpi(which,'m') || strcmpi(which,'moment')
+            elseif strcmpi(which, 'm') || strcmpi(which, 'moment')
                 rv=self.Sting(:,3);
             else
                 error('Must request normal, axial, or moment.');
@@ -184,31 +186,62 @@ classdef windtunneldata
             % Outputs: one or two column vectors of position data
             if nargin == 1
                 rv = self.ELD;
-            elseif strcmp(which,'')
+            elseif strcmp(which, '')
                 rv = self.ELD;
-            elseif strcmpi(which,'x') || strcmpi(which,'horizontal')
+            elseif strcmpi(which, 'x') || strcmpi(which, 'horizontal')
                 rv=self.ELD(:,1);
-            elseif strcmpi(which,'y') || strcmpi(which,'vertical')
+            elseif strcmpi(which, 'y') || strcmpi(which, 'vertical')
                 rv=self.ELD(:,2);
             else
                 error('Must request horizontal or vertical distance.');
             end
         end
+
         function rv = getLift(self)
             % Inputs: none
             % Outputs: the lift force, in N
+            % Uses the sting balance. Does not work from aerodynamic principles.
             N = self.getSting('n');
             A = self.getSting('a');
             alpha = self.getAngle();
-            rv = N .* cos(alpha) - A .* sin(alpha);
+            rv = N .* cosd(alpha) - A .* sind(alpha);
+        end
+        function rv = getCl(self, S, dynSource)
+            % Inputs:
+            %   S: The planform area of the wing.
+            %   [optional] dynSource: What to use for the dynamic pressure. Uses any of the values for getDynamic.
+            % Outputs: the total lift coefficient.
+            % Uses the sting balance. Does not work from aerodynamic principles.
+            L = self.getLift();
+            if nargin > 2
+                q = self.getDynamic(dynSource);
+            else
+                q = self.getDynamic('pitot');
+            end
+            rv = L ./ (q * S);
         end
         function rv = getDrag(self)
             % Inputs: none
             % Outputs: the drag force, in N
+            % Uses the sting balance. Does not work from aerodynamic principles.
             N = self.getSting('n');
             A = self.getSting('a');
             alpha = self.getAngle();
-            rv = A .* cos(alpha) + N .* sin(alpha);
+            rv = A .* cosd(alpha) + N .* sind(alpha);
+        end
+        function rv = getCd(self, S, dynSource)
+            % Inputs:
+            %   S: The planform area of the wing.
+            %   [optional] dynSource: What to use for the dynamic pressure. Uses any of the values for getDynamic.
+            % Outputs: the total lift coefficient.
+            % Uses the sting balance. Does not work from aerodynamic principles.
+            D = self.getDrag();
+            if nargin > 2
+                q = self.getDynamic(dynSource);
+            else
+                q = self.getDynamic('pitot');
+            end
+            rv = D ./ (q * S);
         end
 
         function rv = findByAngle(self, target, tolerance)
@@ -298,7 +331,7 @@ classdef windtunneldata
             rv = ~self.VALID;
         end
 
-        function fig = makeplot(self, xvar, yvar, figureargs, plotargs)
+        function fig = makeplot(self, xvar, yvar, figureargs, plotargs, filter)
             % Inputs:
             %   xvar: name of the variable to go on the x axis
             %   yvar: name of the variable to go on the y axis
@@ -311,12 +344,46 @@ classdef windtunneldata
             %   [optional] plotargs: a cell array of arguments to customize the
             %       resulting plot
             % Outputs: The figure in which the plot was drawn
+            if nargin < 6
+                inds = 1:length(self.Airspeed);
+            else
+                if strcmpi(filter{1}, 'angle')
+                    inds = self.findByAngle(filter{2:3});
+                elseif strcmpi(filter{1}, 'speed')
+                    inds = self.findByAirspeed(filter{2:3});
+                end
+            end
             if nargin < 5
                 plotargs = {};
                 if nargin < 4
                     figureargs = {};
                 end
             end
+            [opts, vars, titles, units] = self.make_registry();
+
+            xplace = find(strcmpi(xvar, opts));
+            yplace = find(strcmpi(yvar, opts));
+
+            if ~xplace || ~yplace
+                error('Invalid identifier used.');
+            end
+
+            X = vars{xplace};
+            Y = vars{yplace};
+            TITLE = sprintf('%s against %s', titles{yplace}, titles{xplace});
+            XLABEL = sprintf('%s (%s)', titles{xplace}, units{xplace});
+            YLABEL = sprintf('%s (%s)', titles{yplace}, units{yplace});
+
+            fig = figure(figureargs{:});
+
+            plot(X(inds), Y(inds), plotargs{:});
+            title(TITLE)
+            xlabel(XLABEL)
+            ylabel(YLABEL)
+        end
+    end
+    methods (Access='protected')
+        function [opts, vars, titles, units] = make_registry(self)
             opts = {'temperature';
                     'pressure';
                     'density';
@@ -379,26 +446,6 @@ classdef windtunneldata
                       'N';
                       'unitless'
                     };
-
-            xplace = find(strcmpi(xvar, opts));
-            yplace = find(strcmpi(yvar, opts));
-
-            if ~xplace || ~yplace
-                error('Invalid identifier used.');
-            end
-
-            X = vars{xplace};
-            Y = vars{yplace};
-            TITLE = sprintf('%s against %s', titles{yplace}, titles{xplace});
-            XLABEL = sprintf('%s (%s)', titles{xplace}, units{xplace});
-            YLABEL = sprintf('%s (%s)', titles{yplace}, units{yplace});
-
-            fig = figure(figureargs{:});
-
-            plot(X, Y, plotargs{:});
-            title(TITLE)
-            xlabel(XLABEL)
-            ylabel(YLABEL)
         end
     end
 end
